@@ -17,7 +17,7 @@
         }
 
         body {
-            background-color: #fce029; /* Galben Minion */
+            background-color: #fce029;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -33,11 +33,10 @@
             position: absolute;
             top: -20%; left: -20%; right: -20%; bottom: -20%;
             background: radial-gradient(circle at center, #fce029 0%, #f0c400 100%);
-            z-index: -3; /* Sub baloane */
-            transition: transform 0.1s ease-out;
+            z-index: -3;
+            will-change: transform;
         }
 
-        /* Container Baloane */
         #balloon-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -51,12 +50,11 @@
             bottom: -150px;
             width: 50px;
             height: 70px;
-            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; /* Forma picatura */
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
             opacity: 1;
             animation: floatUp infinite linear;
         }
 
-        /* Ata balonului */
         .balloon::after {
             content: "";
             position: absolute;
@@ -65,15 +63,15 @@
             background: #000;
         }
 
-        .b-blue { background: #004dff; border: 2px solid #0033aa; }
-        .b-red { background: #ff0000; border: 2px solid #aa0000; }
-        .b-pink { background: #ff69b4; border: 2px solid #cc5599; }
-        .b-white { background: #ffffff; border: 2px solid #cccccc; }
+        .b-blue   { background: #004dff; border: 2px solid #0033aa; }
+        .b-red    { background: #ff0000; border: 2px solid #aa0000; }
+        .b-pink   { background: #ff69b4; border: 2px solid #cc5599; }
+        .b-white  { background: #ffffff; border: 2px solid #cccccc; }
         .b-purple { background: #a020f0; border: 2px solid #7010b0; }
 
         @keyframes floatUp {
-            0% { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(-130vh) rotate(10deg); }
+            0%   { transform: translateY(0)       rotate(0deg); }
+            100% { transform: translateY(-130vh)  rotate(10deg); }
         }
 
         #confetti-canvas {
@@ -83,7 +81,6 @@
             pointer-events: none;
         }
 
-        /* Centrare Card */
         .card {
             position: relative;
             z-index: 10;
@@ -91,14 +88,16 @@
             background: #ffffff;
             border-radius: 30px;
             box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.4);
-            transition: transform 0.1s ease-out, opacity 0.5s ease-in-out;
+            /* transition removed from transform — RAF handles smoothing now */
+            transition: opacity 0.5s ease-in-out;
             transform-style: preserve-3d;
-            display: none; 
-            flex-direction: column; /* Pentru centrare */
-            align-items: center; 
+            display: none;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
             opacity: 0;
             width: fit-content;
+            will-change: transform;
         }
 
         .greeting {
@@ -112,7 +111,7 @@
 
         .card img {
             display: block;
-            margin: 0 auto; /* Centrare orizontala */
+            margin: 0 auto;
             border-radius: 15px;
             width: 300px;
             height: 300px;
@@ -120,13 +119,13 @@
             max-height: 75vw;
             object-fit: cover;
             border: 5px solid #fce029;
-            transform: translateZ(40px); 
+            transform: translateZ(40px);
         }
 
         #shake-content {
             position: absolute;
             top: 50%; left: 50%;
-            transform: translate(-50%, -50%); /* Centrare perfecta */
+            transform: translate(-50%, -50%);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -138,7 +137,7 @@
 
         @keyframes popIn {
             from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
         }
 
         .shake-text {
@@ -170,7 +169,6 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.4);
             cursor: pointer;
             letter-spacing: 1px;
-            transition: transform 0.2s;
         }
 
         .fade-out { opacity: 0 !important; pointer-events: none; }
@@ -202,15 +200,28 @@
         const btn = document.getElementById('permission-btn');
         const shakeContent = document.getElementById('shake-content');
         const balloonContainer = document.getElementById('balloon-container');
-        
-        let confettiInterval, balloonInterval;
+
+        let confettiInterval, balloonInterval, rafId;
         let isShaken = false;
-        let baseBeta = null;
-        let baseGamma = null;
-        let lastX = 0, lastY = 0, lastZ = 0;
+
+        // Calibration — set when card becomes visible, not on first sensor event
+        let baseBeta = null, baseGamma = null;
+
+        // Smoothed values (lerp targets and current state)
+        let targetRotX = 0, targetRotY = 0;
+        let currentRotX = 0, currentRotY = 0;
+
+        // Motion shake detection
+        let lastX = 0, lastY = 0;
+
+        const LERP = 0.12;          // Lower = smoother but slower (0.08–0.15 is good)
+        const MAX_TILT_DEG = 30;    // Device tilt range mapped to card
+        const MAX_CARD_ROT = 20;    // Max card rotation in degrees
+        const MAX_BG_SHIFT = 45;    // Max bg parallax in px
 
         const colors = ['b-blue', 'b-red', 'b-pink', 'b-white', 'b-purple'];
 
+        /* ── Balloon ─────────────────────────────────────── */
         function createBalloon() {
             const b = document.createElement('div');
             b.className = `balloon ${colors[Math.floor(Math.random() * colors.length)]}`;
@@ -220,51 +231,82 @@
             setTimeout(() => b.remove(), 8000);
         }
 
+        /* ── Confetti ────────────────────────────────────── */
         function startConfetti() {
             myConfetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#ffffff', '#000080', '#fce029'] });
             confettiInterval = setInterval(() => {
-                myConfetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
+                myConfetti({ particleCount: 5, angle: 60,  spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
                 myConfetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
             }, 200);
         }
 
+        /* ── RAF tilt loop ───────────────────────────────── */
+        function tiltLoop() {
+            if (!isShaken) {
+                // Lerp toward target
+                currentRotX += (targetRotX - currentRotX) * LERP;
+                currentRotY += (targetRotY - currentRotY) * LERP;
+
+                card.style.transform =
+                    `rotateX(${currentRotX.toFixed(3)}deg) rotateY(${currentRotY.toFixed(3)}deg)`;
+                bg.style.transform =
+                    `translate(${(-currentRotY / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px,` +
+                    ` ${( currentRotX / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px)`;
+            }
+            rafId = requestAnimationFrame(tiltLoop);
+        }
+
+        /* ── Orientation handler ─────────────────────────── */
         function handleOrientation(event) {
             if (isShaken) return;
-            let beta = event.beta; let gamma = event.gamma;
+            const { beta, gamma } = event;
             if (beta === null || gamma === null) return;
-            if (baseBeta === null) { baseBeta = beta; baseGamma = gamma; }
-            let tiltY = Math.max(-35, Math.min(35, beta - baseBeta));
-            let tiltX = Math.max(-35, Math.min(35, gamma - baseGamma));
-            card.style.transform = `rotateX(${-(tiltY / 35) * 25}deg) rotateY(${(tiltX / 35) * 25}deg)`;
-            bg.style.transform = `translate(${(tiltX / 35) * -45}px, ${(tiltY / 35) * -45}px)`;
+
+            // Calibration is set once when the card appears (see btn click handler)
+            if (baseBeta === null || baseGamma === null) return;
+
+            // Delta from resting position, clamped
+            const dBeta  = Math.max(-MAX_TILT_DEG, Math.min(MAX_TILT_DEG, beta  - baseBeta));
+            const dGamma = Math.max(-MAX_TILT_DEG, Math.min(MAX_TILT_DEG, gamma - baseGamma));
+
+            // Map to card rotation angles
+            targetRotX = -(dBeta  / MAX_TILT_DEG) * MAX_CARD_ROT;
+            targetRotY =  (dGamma / MAX_TILT_DEG) * MAX_CARD_ROT;
         }
 
+        /* ── Motion/shake handler ────────────────────────── */
         function handleMotion(event) {
             if (isShaken) return;
-            let accel = event.accelerationIncludingGravity;
+            const accel = event.accelerationIncludingGravity;
             if (!accel || accel.x === null) return;
-            let deltaX = Math.abs(accel.x - lastX);
-            let deltaY = Math.abs(accel.y - lastY);
+            const deltaX = Math.abs(accel.x - lastX);
+            const deltaY = Math.abs(accel.y - lastY);
             if (deltaX > 25 || deltaY > 25) triggerSurprise();
-            lastX = accel.x; lastY = accel.y; lastZ = accel.z;
+            lastX = accel.x;
+            lastY = accel.y;
         }
 
+        /* ── Surprise reveal ─────────────────────────────── */
         function triggerSurprise() {
-            if(isShaken) return;
+            if (isShaken) return;
             isShaken = true;
+            cancelAnimationFrame(rafId);
             clearInterval(confettiInterval);
             clearInterval(balloonInterval);
             card.classList.add('fade-out');
             setTimeout(() => {
                 card.style.display = 'none';
                 balloonContainer.style.display = 'none';
+                bg.style.transform = 'translate(0,0)';
                 shakeContent.style.display = 'flex';
-                bg.style.transform = `translate(0,0)`;
             }, 500);
         }
 
+        /* ── Button ──────────────────────────────────────── */
         btn.addEventListener('click', async () => {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Register sensor listeners
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const oState = await DeviceOrientationEvent.requestPermission();
                     if (oState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
@@ -279,10 +321,25 @@
             btn.style.display = 'none';
             card.style.display = 'flex';
             balloonContainer.style.display = 'block';
+
+            // Calibrate AFTER a short delay so the first sensor reading is stable,
+            // and the phone is already in the user's hand at reading angle.
+            setTimeout(() => {
+                const calibrate = (e) => {
+                    if (e.beta !== null && e.gamma !== null) {
+                        baseBeta  = e.beta;
+                        baseGamma = e.gamma;
+                    }
+                    window.removeEventListener('deviceorientation', calibrate);
+                };
+                window.addEventListener('deviceorientation', calibrate);
+            }, 300);
+
             setTimeout(() => { card.style.opacity = '1'; }, 50);
-            
+
             startConfetti();
             balloonInterval = setInterval(createBalloon, 600);
+            tiltLoop(); // Start smooth RAF loop
         });
     </script>
 </body>

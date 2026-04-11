@@ -105,7 +105,7 @@
             font-size: 26px;
             font-weight: 900;
             margin-bottom: 15px;
-            text-transform: uppercase;
+
             transform: translateZ(60px);
         }
 
@@ -248,7 +248,7 @@
                 currentRotY += (targetRotY - currentRotY) * LERP;
 
                 card.style.transform =
-                    `rotateX(${currentRotX.toFixed(3)}deg) rotateY(${currentRotY.toFixed(3)}deg)`;
+                    `scale(0.8) rotateX(${currentRotX.toFixed(3)}deg) rotateY(${currentRotY.toFixed(3)}deg)`;
                 bg.style.transform =
                     `translate(${(-currentRotY / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px,` +
                     ` ${( currentRotX / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px)`;

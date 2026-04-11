@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minion Parallax Experience</title>
+    <title>La multi ani Ilinca!</title>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -13,162 +13,240 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         body {
-            /* Minion Yellow */
-            background-color: #fce029; 
+            background-color: #fce029; /* Minion Yellow */
             height: 100vh;
             width: 100vw;
             overflow: hidden;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            perspective: 1000px; 
+            font-family: 'Segoe UI', sans-serif;
+            perspective: 1200px;
         }
 
-        /* Oversized background layer for movement */
         #bg-layer {
             position: absolute;
-            top: -15%; left: -15%; right: -15%; bottom: -15%;
-            background: radial-gradient(circle at center, #fce029 0%, #f7d117 100%);
-            z-index: -1;
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            top: -20%; left: -20%; right: -20%; bottom: -20%;
+            background: radial-gradient(circle at center, #fce029 0%, #f0c400 100%);
+            z-index: -2;
+            transition: transform 0.1s ease-out;
         }
 
-        /* The container holding the GIF */
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* The Main Card (GIF + Greeting) */
         .card {
             position: relative;
             z-index: 10;
-            padding: 12px;
-            background: #fff;
-            border-radius: 20px;
-            /* High-end stylish border look */
-            box-shadow: 
-                0 25px 50px -12px rgba(0, 0, 0, 0.5),
-                inset 0 0 0 2px rgba(0,0,0,0.05);
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s ease-out, opacity 0.5s ease-in-out;
             transform-style: preserve-3d;
+            opacity: 1;
+        }
+
+        .fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .greeting {
+            color: #000080;
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            transform: translateZ(60px);
         }
 
         .card img {
             display: block;
-            border-radius: 12px;
-            width: 300px; /* Force square-ish look */
+            border-radius: 15px;
+            width: 300px;
             height: 300px;
-            max-width: 80vw;
-            max-height: 80vw;
+            max-width: 75vw;
+            max-height: 75vw;
             object-fit: cover;
-            /* Creates depth between the border and the image */
+            border: 5px solid #fce029;
             transform: translateZ(40px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        /* iOS Safari Permission Button */
+        /* The Hidden Content (After Shake) */
+        #shake-content {
+            position: absolute;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            z-index: 20;
+            width: 90%;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .shake-text {
+            color: #000080;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .noi-img {
+            width: 300px;
+            max-width: 85vw;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 8px solid white;
+        }
+
         #permission-btn {
             position: absolute;
             bottom: 50px;
-            padding: 18px 36px;
+            padding: 15px 45px;
             background: #000;
             color: #fff;
             border: none;
-            border-radius: 40px;
-            font-size: 14px;
+            border-radius: 50px;
+            font-size: 18px;
             font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
             z-index: 100;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
     <div id="bg-layer"></div>
+    <canvas id="confetti-canvas"></canvas>
 
     <div class="card" id="tilt-card">
-        <img src="tenor.gif" alt="Minion Fun">
+        <h1 class="greeting">La multi ani Ilinca!!</h1>
+        <img src="tenor.gif" alt="Minion Birthday">
     </div>
 
-    <button id="permission-btn">Tap to Start Parallax</button>
+    <div id="shake-content">
+        <p class="shake-text">Surpriză! Te iubim mult!</p>
+        <img src="noi.jpg" class="noi-img" alt="Noi">
+    </div>
+
+    <button id="permission-btn">Apasa-ma!!!</button>
 
     <script>
-        // --- 1. INFINITE CONFETTI ---
-        window.addEventListener('load', () => {
-            // Initial blast
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-
-            // Loop forever
-            setInterval(() => {
-                confetti({
-                    particleCount: 2,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0, y: 0.8 },
-                    colors: ['#222', '#fff', '#fce029']
-                });
-                confetti({
-                    particleCount: 2,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1, y: 0.8 },
-                    colors: ['#222', '#fff', '#fce029']
-                });
-            }, 250);
-        });
-
-        // --- 2. GYRO PARALLAX ---
+        const canvas = document.getElementById('confetti-canvas');
+        const myConfetti = confetti.create(canvas, { resize: true });
         const card = document.getElementById('tilt-card');
         const bg = document.getElementById('bg-layer');
         const btn = document.getElementById('permission-btn');
+        const shakeContent = document.getElementById('shake-content');
+        
+        let confettiInterval;
+        let isShaken = false;
+        let baseBeta = null;
+        let baseGamma = null;
 
-        function handleOrientation(event) {
-            let x = event.gamma; 
-            let y = event.beta;  
-
-            if (x === null || y === null) return;
-
-            // Constrain tilt
-            x = Math.max(-30, Math.min(30, x));
-            y = Math.max(-30, Math.min(30, y));
-
-            // Card Tilt (Rotation)
-            const xRot = (y / 30) * 20;
-            const yRot = (x / 30) * 20;
-
-            // Background Slide (Parallax)
-            const bgX = (x / 30) * -30;
-            const bgY = (y / 30) * -30;
-
-            card.style.transform = `rotateX(${-xRot}deg) rotateY(${yRot}deg)`;
-            bg.style.transform = `translate(${bgX}px, ${bgY}px)`;
+        // --- 1. CONFETTI LOGIC ---
+        function startConfetti() {
+            myConfetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#ffffff', '#000080', '#fce029'] });
+            confettiInterval = setInterval(() => {
+                myConfetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
+                myConfetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
+            }, 200);
         }
 
-        btn.addEventListener('click', () => {
+        function stopConfetti() {
+            clearInterval(confettiInterval);
+        }
+
+        // --- 2. GYRO PARALLAX ---
+        function handleOrientation(event) {
+            if (isShaken) return; // Stop gyro effect if shaken
+            
+            let beta = event.beta; 
+            let gamma = event.gamma;
+            if (beta === null || gamma === null) return;
+            if (baseBeta === null) { baseBeta = beta; baseGamma = gamma; }
+
+            let tiltY = Math.max(-35, Math.min(35, beta - baseBeta));
+            let tiltX = Math.max(-35, Math.min(35, gamma - baseGamma));
+
+            card.style.transform = `rotateX(${-(tiltY / 35) * 25}deg) rotateY(${(tiltX / 35) * 25}deg)`;
+            bg.style.transform = `translate(${(tiltX / 35) * -45}px, ${(tiltY / 35) * -45}px)`;
+        }
+
+        // --- 3. SHAKE DETECTION ---
+        let lastX, lastY, lastZ;
+        let moveThreshold = 25; // How hard the shake needs to be
+
+        function handleMotion(event) {
+            if (isShaken) return;
+            let accel = event.accelerationIncludingGravity;
+            if (!accel.x) return;
+
+            let deltaX = Math.abs(accel.x - lastX);
+            let deltaY = Math.abs(accel.y - lastY);
+            let deltaZ = Math.abs(accel.z - lastZ);
+
+            if ((deltaX > moveThreshold && deltaY > moveThreshold) || (deltaX > moveThreshold && deltaZ > moveThreshold)) {
+                triggerSurprise();
+            }
+
+            lastX = accel.x; lastY = accel.y; lastZ = accel.z;
+        }
+
+        function triggerSurprise() {
+            isShaken = true;
+            stopConfetti();
+            
+            // Fade out the GIF card
+            card.classList.add('fade-out');
+            
+            setTimeout(() => {
+                card.style.display = 'none';
+                // Show the static content
+                shakeContent.style.display = 'flex';
+                // Reset background position
+                bg.style.transform = `translate(0,0)`;
+            }, 500);
+        }
+
+        // --- 4. PERMISSIONS ---
+        btn.addEventListener('click', async () => {
+            // Request Orientation (iOS)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(state => {
-                        if (state === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                            btn.style.display = 'none';
-                        }
-                    });
+                const state = await DeviceOrientationEvent.requestPermission();
+                if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
-                btn.style.display = 'none';
             }
-        });
 
-        // Auto-hide button if permission is already granted or not needed
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-            window.addEventListener('deviceorientation', handleOrientation);
+            // Request Motion (Shake detection)
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                const state = await DeviceMotionEvent.requestPermission();
+                if (state === 'granted') window.addEventListener('devicemotion', handleMotion);
+            } else {
+                window.addEventListener('devicemotion', handleMotion);
+            }
+
             btn.style.display = 'none';
-        }
+            startConfetti();
+        });
     </script>
 </body>
 </html>

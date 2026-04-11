@@ -33,8 +33,47 @@
             position: absolute;
             top: -20%; left: -20%; right: -20%; bottom: -20%;
             background: radial-gradient(circle at center, #fce029 0%, #f0c400 100%);
-            z-index: -2;
+            z-index: -3; /* Sub baloane */
             transition: transform 0.1s ease-out;
+        }
+
+        /* Container Baloane */
+        #balloon-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            display: none;
+        }
+
+        .balloon {
+            position: absolute;
+            bottom: -150px;
+            width: 50px;
+            height: 70px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; /* Forma picatura */
+            opacity: 1;
+            animation: floatUp infinite linear;
+        }
+
+        /* Ata balonului */
+        .balloon::after {
+            content: "";
+            position: absolute;
+            top: 100%; left: 50%;
+            width: 2px; height: 80px;
+            background: #000;
+        }
+
+        .b-blue { background: #004dff; border: 2px solid #0033aa; }
+        .b-red { background: #ff0000; border: 2px solid #aa0000; }
+        .b-pink { background: #ff69b4; border: 2px solid #cc5599; }
+        .b-white { background: #ffffff; border: 2px solid #cccccc; }
+        .b-purple { background: #a020f0; border: 2px solid #7010b0; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-130vh) rotate(10deg); }
         }
 
         #confetti-canvas {
@@ -44,23 +83,26 @@
             pointer-events: none;
         }
 
-        /* Cardul inițial - Ascuns la început */
+        /* Centrare Card */
         .card {
             position: relative;
             z-index: 10;
             padding: 20px;
             background: #ffffff;
             border-radius: 30px;
-            text-align: center;
             box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.4);
             transition: transform 0.1s ease-out, opacity 0.5s ease-in-out;
             transform-style: preserve-3d;
-            display: none; /* Ascuns inițial */
+            display: none; 
+            flex-direction: column; /* Pentru centrare */
+            align-items: center; 
+            justify-content: center;
             opacity: 0;
+            width: fit-content;
         }
 
         .greeting {
-            color: #000080; /* Navy Blue */
+            color: #000080;
             font-size: 26px;
             font-weight: 900;
             margin-bottom: 15px;
@@ -70,6 +112,7 @@
 
         .card img {
             display: block;
+            margin: 0 auto; /* Centrare orizontala */
             border-radius: 15px;
             width: 300px;
             height: 300px;
@@ -80,9 +123,10 @@
             transform: translateZ(40px); 
         }
 
-        /* Conținutul după Shake - Ascuns */
         #shake-content {
             position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%); /* Centrare perfecta */
             display: none;
             flex-direction: column;
             align-items: center;
@@ -93,8 +137,8 @@
         }
 
         @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
         .shake-text {
@@ -114,7 +158,6 @@
             border: 8px solid white;
         }
 
-        /* Butonul Central de Start */
         #permission-btn {
             padding: 20px 50px;
             background: #000;
@@ -130,19 +173,13 @@
             transition: transform 0.2s;
         }
 
-        #permission-btn:active {
-            transform: scale(0.9);
-        }
-
-        .fade-out {
-            opacity: 0 !important;
-            pointer-events: none;
-        }
+        .fade-out { opacity: 0 !important; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div id="bg-layer"></div>
+    <div id="balloon-container"></div>
     <canvas id="confetti-canvas"></canvas>
 
     <button id="permission-btn">Apasa-ma!!!</button>
@@ -164,105 +201,88 @@
         const bg = document.getElementById('bg-layer');
         const btn = document.getElementById('permission-btn');
         const shakeContent = document.getElementById('shake-content');
+        const balloonContainer = document.getElementById('balloon-container');
         
-        let confettiInterval;
+        let confettiInterval, balloonInterval;
         let isShaken = false;
         let baseBeta = null;
         let baseGamma = null;
+        let lastX = 0, lastY = 0, lastZ = 0;
 
-        // --- 1. CONFETTI ---
+        const colors = ['b-blue', 'b-red', 'b-pink', 'b-white', 'b-purple'];
+
+        function createBalloon() {
+            const b = document.createElement('div');
+            b.className = `balloon ${colors[Math.floor(Math.random() * colors.length)]}`;
+            b.style.left = `${Math.random() * 90 + 5}%`;
+            b.style.animationDuration = `${Math.random() * 4 + 4}s`;
+            balloonContainer.appendChild(b);
+            setTimeout(() => b.remove(), 8000);
+        }
+
         function startConfetti() {
-            myConfetti({ 
-                particleCount: 200, 
-                spread: 100, 
-                origin: { y: 0.6 }, 
-                colors: ['#ffffff', '#000080', '#fce029'] 
-            });
+            myConfetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#ffffff', '#000080', '#fce029'] });
             confettiInterval = setInterval(() => {
                 myConfetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
                 myConfetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
             }, 200);
         }
 
-        function stopConfetti() {
-            clearInterval(confettiInterval);
-        }
-
-        // --- 2. GIROSCOP ---
         function handleOrientation(event) {
             if (isShaken) return;
-            
-            let beta = event.beta; 
-            let gamma = event.gamma;
+            let beta = event.beta; let gamma = event.gamma;
             if (beta === null || gamma === null) return;
-
-            if (baseBeta === null) { 
-                baseBeta = beta; 
-                baseGamma = gamma; 
-            }
-
+            if (baseBeta === null) { baseBeta = beta; baseGamma = gamma; }
             let tiltY = Math.max(-35, Math.min(35, beta - baseBeta));
             let tiltX = Math.max(-35, Math.min(35, gamma - baseGamma));
-
             card.style.transform = `rotateX(${-(tiltY / 35) * 25}deg) rotateY(${(tiltX / 35) * 25}deg)`;
             bg.style.transform = `translate(${(tiltX / 35) * -45}px, ${(tiltY / 35) * -45}px)`;
         }
-
-        // --- 3. DETECTARE SHAKE ---
-        let lastX, lastY, lastZ;
-        let moveThreshold = 25; 
 
         function handleMotion(event) {
             if (isShaken) return;
             let accel = event.accelerationIncludingGravity;
             if (!accel || accel.x === null) return;
-
             let deltaX = Math.abs(accel.x - lastX);
             let deltaY = Math.abs(accel.y - lastY);
-            let deltaZ = Math.abs(accel.z - lastZ);
-
-            if ((deltaX > moveThreshold && deltaY > moveThreshold) || (deltaX > moveThreshold && deltaZ > moveThreshold)) {
-                triggerSurprise();
-            }
-
+            if (deltaX > 25 || deltaY > 25) triggerSurprise();
             lastX = accel.x; lastY = accel.y; lastZ = accel.z;
         }
 
         function triggerSurprise() {
+            if(isShaken) return;
             isShaken = true;
-            stopConfetti();
-            
+            clearInterval(confettiInterval);
+            clearInterval(balloonInterval);
             card.classList.add('fade-out');
-            
             setTimeout(() => {
                 card.style.display = 'none';
+                balloonContainer.style.display = 'none';
                 shakeContent.style.display = 'flex';
                 bg.style.transform = `translate(0,0)`;
             }, 500);
         }
 
-        // --- 4. ACTIVARE (BUTON) ---
         btn.addEventListener('click', async () => {
-            // Cerere permisiuni iOS
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
-                    const orientationState = await DeviceOrientationEvent.requestPermission();
-                    if (orientationState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                    
-                    const motionState = await DeviceMotionEvent.requestPermission();
-                    if (motionState === 'granted') window.addEventListener('devicemotion', handleMotion);
+                    const oState = await DeviceOrientationEvent.requestPermission();
+                    if (oState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                    const mState = await DeviceMotionEvent.requestPermission();
+                    if (mState === 'granted') window.addEventListener('devicemotion', handleMotion);
                 } catch (e) { console.error(e); }
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
                 window.addEventListener('devicemotion', handleMotion);
             }
 
-            // Ascundem butonul și afișăm conținutul
             btn.style.display = 'none';
-            card.style.display = 'block';
+            card.style.display = 'flex';
+            balloonContainer.style.display = 'block';
             setTimeout(() => { card.style.opacity = '1'; }, 50);
             
             startConfetti();
+            balloonInterval = setInterval(createBalloon, 600);
         });
     </script>
 </body>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minion Parallax Experience</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            /* Minion Yellow */
+            background-color: #fce029; 
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            perspective: 1000px; 
+        }
+
+        /* Oversized background layer for movement */
+        #bg-layer {
+            position: absolute;
+            top: -15%; left: -15%; right: -15%; bottom: -15%;
+            background: radial-gradient(circle at center, #fce029 0%, #f7d117 100%);
+            z-index: -1;
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* The container holding the GIF */
+        .card {
+            position: relative;
+            z-index: 10;
+            padding: 12px;
+            background: #fff;
+            border-radius: 20px;
+            /* High-end stylish border look */
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 0 0 2px rgba(0,0,0,0.05);
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-style: preserve-3d;
+        }
+
+        .card img {
+            display: block;
+            border-radius: 12px;
+            width: 300px; /* Force square-ish look */
+            height: 300px;
+            max-width: 80vw;
+            max-height: 80vw;
+            object-fit: cover;
+            /* Creates depth between the border and the image */
+            transform: translateZ(40px); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* iOS Safari Permission Button */
+        #permission-btn {
+            position: absolute;
+            bottom: 50px;
+            padding: 18px 36px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            z-index: 100;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+
+    <div class="card" id="tilt-card">
+        <img src="tenor.gif" alt="Minion Fun">
+    </div>
+
+    <button id="permission-btn">Tap to Start Parallax</button>
+
+    <script>
+        // --- 1. INFINITE CONFETTI ---
+        window.addEventListener('load', () => {
+            // Initial blast
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            // Loop forever
+            setInterval(() => {
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 },
+                    colors: ['#222', '#fff', '#fce029']
+                });
+                confetti({
+                    particleCount: 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.8 },
+                    colors: ['#222', '#fff', '#fce029']
+                });
+            }, 250);
+        });
+
+        // --- 2. GYRO PARALLAX ---
+        const card = document.getElementById('tilt-card');
+        const bg = document.getElementById('bg-layer');
+        const btn = document.getElementById('permission-btn');
+
+        function handleOrientation(event) {
+            let x = event.gamma; 
+            let y = event.beta;  
+
+            if (x === null || y === null) return;
+
+            // Constrain tilt
+            x = Math.max(-30, Math.min(30, x));
+            y = Math.max(-30, Math.min(30, y));
+
+            // Card Tilt (Rotation)
+            const xRot = (y / 30) * 20;
+            const yRot = (x / 30) * 20;
+
+            // Background Slide (Parallax)
+            const bgX = (x / 30) * -30;
+            const bgY = (y / 30) * -30;
+
+            card.style.transform = `rotateX(${-xRot}deg) rotateY(${yRot}deg)`;
+            bg.style.transform = `translate(${bgX}px, ${bgY}px)`;
+        }
+
+        btn.addEventListener('click', () => {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => {
+                        if (state === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            btn.style.display = 'none';
+                        }
+                    });
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+                btn.style.display = 'none';
+            }
+        });
+
+        // Auto-hide button if permission is already granted or not needed
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            btn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

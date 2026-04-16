@@ -136,8 +136,13 @@
             text-align: center;
             z-index: 20;
             width: 90%;
+            opacity: 0;
             animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), glow 2s ease-in-out infinite alternate;
             backdrop-filter: blur(10px);
+        }
+
+        #shake-content.visible {
+            opacity: 1;
         }
 
         @keyframes popIn {
@@ -157,6 +162,7 @@
             margin-bottom: 25px;
             line-height: 1.4;
             padding: 0 10px;
+            min-height: 62px;
         }
 
         .noi-img {
@@ -165,6 +171,66 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             border: 8px solid white;
+        }
+
+        .timer-wrap {
+            margin-top: 16px;
+            width: 100%;
+            max-width: 340px;
+            padding: 14px 16px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 16px 35px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(0, 0, 128, 0.12);
+            opacity: 0;
+            transform: translateY(14px) scale(0.98);
+            pointer-events: none;
+        }
+
+        .timer-wrap.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .timer-label {
+            color: #000080;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .timer-box {
+            background: linear-gradient(180deg, rgba(252, 224, 41, 0.95), rgba(255, 255, 255, 0.92));
+            border: 1px solid rgba(0, 0, 128, 0.1);
+            border-radius: 16px;
+            padding: 10px 8px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+        }
+
+        .timer-value {
+            display: block;
+            color: #000080;
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .timer-unit {
+            display: block;
+            color: rgba(0, 0, 128, 0.8);
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
         }
 
         #permission-btn {
@@ -204,6 +270,18 @@
     <div id="shake-content">
         <p class="shake-text" data-text="La multi ani iubirea mea!! Te iubesc cel mai mult din tot universul ilinca!"></p>
         <img src="noi.jpg" class="noi-img" alt="Noi">
+        <div class="timer-wrap" id="timer-wrap">
+            <div class="timer-label">De la 22.08.2025, 20:00</div>
+            <div class="timer-grid">
+                <div class="timer-box"><span class="timer-value" id="timer-years">0</span><span class="timer-unit">ani</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-months">0</span><span class="timer-unit">luni</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-weeks">0</span><span class="timer-unit">săptămâni</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-days">0</span><span class="timer-unit">zile</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-hours">0</span><span class="timer-unit">ore</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-minutes">0</span><span class="timer-unit">minute</span></div>
+                <div class="timer-box"><span class="timer-value" id="timer-seconds">0</span><span class="timer-unit">secunde</span></div>
+            </div>
+        </div>
     </div>
 
     <audio id="bg-music" loop preload="auto"></audio>
@@ -219,8 +297,16 @@
         const music = document.getElementById('bg-music');
         const shakeText = document.querySelector('.shake-text');
         const shakeTextValue = shakeText.dataset.text;
+        const timerWrap = document.getElementById('timer-wrap');
+        const timerYears = document.getElementById('timer-years');
+        const timerMonths = document.getElementById('timer-months');
+        const timerWeeks = document.getElementById('timer-weeks');
+        const timerDays = document.getElementById('timer-days');
+        const timerHours = document.getElementById('timer-hours');
+        const timerMinutes = document.getElementById('timer-minutes');
+        const timerSeconds = document.getElementById('timer-seconds');
 
-        let confettiInterval, balloonInterval, rafId;
+        let confettiInterval, balloonInterval, rafId, timerInterval;
         let isShaken = false;
 
         let baseBeta = null, baseGamma = null;
@@ -233,6 +319,7 @@
         const LERP = 0.12;
 
         const colors = ['b-blue', 'b-red', 'b-pink', 'b-white', 'b-purple'];
+        const startTime = new Date('2025-08-22T20:00:00+03:00').getTime();
 
         function requestFullscreen() {
             const el = document.documentElement;
@@ -279,19 +366,61 @@
             }, 200);
         }
 
-        function typeText(el, text, speed) {
+        function typeText(el, text, speed, done) {
             let i = 0;
             el.innerHTML = '';
             const interval = setInterval(() => {
                 el.innerHTML += text[i++];
-                if (i >= text.length) clearInterval(interval);
+                if (i >= text.length) {
+                    clearInterval(interval);
+                    if (done) done();
+                }
             }, speed);
         }
 
-        function heartbeat() {
-            if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
+        function updateTimer() {
+            const now = Date.now();
+            let diff = Math.max(0, now - startTime);
+
+            const totalSeconds = Math.floor(diff / 1000);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const totalHours = Math.floor(totalMinutes / 60);
+            const totalDays = Math.floor(totalHours / 24);
+            const totalWeeks = Math.floor(totalDays / 7);
+
+            let start = new Date(startTime);
+            let end = new Date(now);
+            let years = end.getUTCFullYear() - start.getUTCFullYear();
+            let cursor = new Date(start.getTime());
+            cursor.setUTCFullYear(cursor.getUTCFullYear() + years);
+            if (cursor > end) {
+                years--;
+                cursor = new Date(start.getTime());
+                cursor.setUTCFullYear(cursor.getUTCFullYear() + years);
             }
+
+            let months = (end.getUTCFullYear() - cursor.getUTCFullYear()) * 12 + (end.getUTCMonth() - cursor.getUTCMonth());
+            let monthCursor = new Date(cursor.getTime());
+            monthCursor.setUTCMonth(monthCursor.getUTCMonth() + months);
+            if (monthCursor > end) {
+                months--;
+                monthCursor = new Date(cursor.getTime());
+                monthCursor.setUTCMonth(monthCursor.getUTCMonth() + months);
+            }
+
+            timerYears.textContent = years;
+            timerMonths.textContent = years * 12 + months;
+            timerWeeks.textContent = totalWeeks;
+            timerDays.textContent = totalDays;
+            timerHours.textContent = totalHours;
+            timerMinutes.textContent = totalMinutes;
+            timerSeconds.textContent = totalSeconds;
+        }
+
+        function startTimer() {
+            updateTimer();
+            timerWrap.classList.add('visible');
+            timerInterval = setInterval(updateTimer, 1000);
         }
 
         function tiltLoop() {
@@ -336,14 +465,16 @@
             cancelAnimationFrame(rafId);
             clearInterval(confettiInterval);
             clearInterval(balloonInterval);
-            heartbeat();
             card.classList.add('fade-out');
             setTimeout(() => {
                 card.style.display = 'none';
                 balloonContainer.style.display = 'none';
                 bg.style.transform = 'translate(0,0)';
                 shakeContent.style.display = 'flex';
-                typeText(shakeText, shakeTextValue, 40);
+                setTimeout(() => {
+                    shakeContent.classList.add('visible');
+                    typeText(shakeText, shakeTextValue, 20, startTimer);
+                }, 40);
             }, 500);
         }
 

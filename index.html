@@ -88,7 +88,6 @@
             background: #ffffff;
             border-radius: 30px;
             box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.4);
-            /* transition removed from transform — RAF handles smoothing now */
             transition: opacity 0.5s ease-in-out;
             transform-style: preserve-3d;
             display: none;
@@ -105,7 +104,6 @@
             font-size: 26px;
             font-weight: 900;
             margin-bottom: 15px;
-
             transform: translateZ(60px);
         }
 
@@ -192,6 +190,9 @@
         <img src="noi.jpg" class="noi-img" alt="Noi">
     </div>
 
+    <!-- Background music — src loaded via JS to avoid autoplay block -->
+    <audio id="bg-music" loop preload="auto"></audio>
+
     <script>
         const canvas = document.getElementById('confetti-canvas');
         const myConfetti = confetti.create(canvas, { resize: true });
@@ -200,26 +201,46 @@
         const btn = document.getElementById('permission-btn');
         const shakeContent = document.getElementById('shake-content');
         const balloonContainer = document.getElementById('balloon-container');
+        const music = document.getElementById('bg-music');
 
         let confettiInterval, balloonInterval, rafId;
         let isShaken = false;
 
-        // Calibration — set when card becomes visible, not on first sensor event
         let baseBeta = null, baseGamma = null;
 
-        // Smoothed values (lerp targets and current state)
         let targetRotX = 0, targetRotY = 0;
         let currentRotX = 0, currentRotY = 0;
 
-        // Motion shake detection
         let lastX = 0, lastY = 0;
 
-        const LERP = 0.12;          // Lower = smoother but slower (0.08–0.15 is good)
-        const MAX_TILT_DEG = 30;    // Device tilt range mapped to card
-        const MAX_CARD_ROT = 20;    // Max card rotation in degrees
-        const MAX_BG_SHIFT = 45;    // Max bg parallax in px
+        const LERP = 0.12;
 
         const colors = ['b-blue', 'b-red', 'b-pink', 'b-white', 'b-purple'];
+
+        /* ── Fullscreen (iOS Safari uses webkitRequestFullscreen on <html>) ── */
+        function requestFullscreen() {
+            const el = document.documentElement;
+            if (el.requestFullscreen) {
+                el.requestFullscreen().catch(() => {});
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            } else if (el.mozRequestFullScreen) {
+                el.mozRequestFullScreen();
+            } else if (el.msRequestFullscreen) {
+                el.msRequestFullscreen();
+            }
+        }
+
+        /* ── Audio unlock + play ─────────────────────────────────────────── */
+        function startMusic() {
+            music.src = 'song.mp3';
+            music.volume = 1.0;
+            music.play().catch(() => {
+                // If autoplay is still blocked, play on next user tap
+                document.addEventListener('touchstart', () => music.play(), { once: true });
+                document.addEventListener('click',      () => music.play(), { once: true });
+            });
+        }
 
         /* ── Balloon ─────────────────────────────────────── */
         function createBalloon() {
@@ -243,15 +264,11 @@
         /* ── RAF tilt loop ───────────────────────────────── */
         function tiltLoop() {
             if (!isShaken) {
-                // Lerp toward target
                 currentRotX += (targetRotX - currentRotX) * LERP;
                 currentRotY += (targetRotY - currentRotY) * LERP;
 
                 card.style.transform =
                     `scale(0.8) rotateX(${currentRotX.toFixed(3)}deg) rotateY(${currentRotY.toFixed(3)}deg)`;
-                bg.style.transform =
-                    `translate(${(-currentRotY / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px,` +
-                    ` ${( currentRotX / MAX_CARD_ROT * MAX_BG_SHIFT).toFixed(3)}px)`;
             }
             rafId = requestAnimationFrame(tiltLoop);
         }
@@ -261,17 +278,14 @@
             if (isShaken) return;
             const { beta, gamma } = event;
             if (beta === null || gamma === null) return;
-
-            // Calibration is set once when the card appears (see btn click handler)
             if (baseBeta === null || baseGamma === null) return;
 
-            // Delta from resting position, clamped
-            const dBeta  = Math.max(-MAX_TILT_DEG, Math.min(MAX_TILT_DEG, beta  - baseBeta));
-            const dGamma = Math.max(-MAX_TILT_DEG, Math.min(MAX_TILT_DEG, gamma - baseGamma));
+            const dBeta  = beta  - baseBeta;
+            const dGamma = gamma - baseGamma;
 
-            // Map to card rotation angles
-            targetRotX = -(dBeta  / MAX_TILT_DEG) * MAX_CARD_ROT;
-            targetRotY =  (dGamma / MAX_TILT_DEG) * MAX_CARD_ROT;
+            // Apply equal-and-opposite rotation so the card always faces the viewer
+            targetRotX =  dBeta;
+            targetRotY = -dGamma;
         }
 
         /* ── Motion/shake handler ────────────────────────── */
@@ -304,7 +318,13 @@
 
         /* ── Button ──────────────────────────────────────── */
         btn.addEventListener('click', async () => {
-            // Register sensor listeners
+            // 1. Go fullscreen immediately (must be inside user gesture)
+            requestFullscreen();
+
+            // 2. Unlock + start audio (must be inside user gesture)
+            startMusic();
+
+            // 3. Request device sensor permissions (iOS 13+)
             if (typeof DeviceOrientationEvent !== 'undefined' &&
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
@@ -322,8 +342,6 @@
             card.style.display = 'flex';
             balloonContainer.style.display = 'block';
 
-            // Calibrate AFTER a short delay so the first sensor reading is stable,
-            // and the phone is already in the user's hand at reading angle.
             setTimeout(() => {
                 const calibrate = (e) => {
                     if (e.beta !== null && e.gamma !== null) {
@@ -339,7 +357,7 @@
 
             startConfetti();
             balloonInterval = setInterval(createBalloon, 600);
-            tiltLoop(); // Start smooth RAF loop
+            tiltLoop();
         });
     </script>
 </body>

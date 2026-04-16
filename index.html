@@ -201,10 +201,32 @@
             margin-bottom: 10px;
         }
 
-        .timer-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+        .timer-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: nowrap;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .timer-part {
+            min-width: 2ch;
+            text-align: center;
+            color: #000080;
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-sep {
+            color: rgba(0, 0, 128, 0.75);
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 0 2px;
         }
 
         .timer-box {
@@ -272,14 +294,8 @@
         <img src="noi.jpg" class="noi-img" alt="Noi">
         <div class="timer-wrap" id="timer-wrap">
             <div class="timer-label">De la 22.08.2025, 20:00</div>
-            <div class="timer-grid">
-                <div class="timer-box"><span class="timer-value" id="timer-years">0</span><span class="timer-unit">ani</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-months">0</span><span class="timer-unit">luni</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-weeks">0</span><span class="timer-unit">săptămâni</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-days">0</span><span class="timer-unit">zile</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-hours">0</span><span class="timer-unit">ore</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-minutes">0</span><span class="timer-unit">minute</span></div>
-                <div class="timer-box"><span class="timer-value" id="timer-seconds">0</span><span class="timer-unit">secunde</span></div>
+            <div class="timer-line" id="timer-line">
+                <span class="timer-part" id="timer-years">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-months">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-weeks">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-days">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-hours">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-minutes">00</span><span class="timer-sep">:</span><span class="timer-part" id="timer-seconds">00</span>
             </div>
         </div>
     </div>
@@ -378,43 +394,50 @@
             }, speed);
         }
 
+        function pad2(value) {
+            return String(value).padStart(2, '0');
+        }
+
         function updateTimer() {
-            const now = Date.now();
-            let diff = Math.max(0, now - startTime);
-
-            const totalSeconds = Math.floor(diff / 1000);
-            const totalMinutes = Math.floor(totalSeconds / 60);
-            const totalHours = Math.floor(totalMinutes / 60);
-            const totalDays = Math.floor(totalHours / 24);
-            const totalWeeks = Math.floor(totalDays / 7);
-
-            let start = new Date(startTime);
-            let end = new Date(now);
-            let years = end.getUTCFullYear() - start.getUTCFullYear();
+            const start = new Date('2025-08-22T20:00:00+03:00');
+            const now = new Date();
             let cursor = new Date(start.getTime());
-            cursor.setUTCFullYear(cursor.getUTCFullYear() + years);
-            if (cursor > end) {
+
+            let years = now.getFullYear() - cursor.getFullYear();
+            cursor.setFullYear(cursor.getFullYear() + years);
+            if (cursor > now) {
                 years--;
                 cursor = new Date(start.getTime());
-                cursor.setUTCFullYear(cursor.getUTCFullYear() + years);
+                cursor.setFullYear(cursor.getFullYear() + years);
             }
 
-            let months = (end.getUTCFullYear() - cursor.getUTCFullYear()) * 12 + (end.getUTCMonth() - cursor.getUTCMonth());
-            let monthCursor = new Date(cursor.getTime());
-            monthCursor.setUTCMonth(monthCursor.getUTCMonth() + months);
-            if (monthCursor > end) {
+            let months = (now.getFullYear() - cursor.getFullYear()) * 12 + (now.getMonth() - cursor.getMonth());
+            cursor.setMonth(cursor.getMonth() + months);
+            if (cursor > now) {
                 months--;
-                monthCursor = new Date(cursor.getTime());
-                monthCursor.setUTCMonth(monthCursor.getUTCMonth() + months);
+                cursor = new Date(start.getTime());
+                cursor.setFullYear(cursor.getFullYear() + years);
+                cursor.setMonth(cursor.getMonth() + months);
             }
 
-            timerYears.textContent = years;
-            timerMonths.textContent = years * 12 + months;
-            timerWeeks.textContent = totalWeeks;
-            timerDays.textContent = totalDays;
-            timerHours.textContent = totalHours;
-            timerMinutes.textContent = totalMinutes;
-            timerSeconds.textContent = totalSeconds;
+            let diff = Math.max(0, now - cursor);
+            let weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+            diff -= weeks * 7 * 24 * 60 * 60 * 1000;
+            let days = Math.floor(diff / (24 * 60 * 60 * 1000));
+            diff -= days * 24 * 60 * 60 * 1000;
+            let hours = Math.floor(diff / (60 * 60 * 1000));
+            diff -= hours * 60 * 60 * 1000;
+            let minutes = Math.floor(diff / (60 * 1000));
+            diff -= minutes * 60 * 1000;
+            let seconds = Math.floor(diff / 1000);
+
+            timerYears.textContent = pad2(years);
+            timerMonths.textContent = pad2(months);
+            timerWeeks.textContent = pad2(weeks);
+            timerDays.textContent = pad2(days);
+            timerHours.textContent = pad2(hours);
+            timerMinutes.textContent = pad2(minutes);
+            timerSeconds.textContent = pad2(seconds);
         }
 
         function startTimer() {

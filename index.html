@@ -18,6 +18,7 @@
             padding: 0;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            transition: all 0.3s ease;
         }
 
         body {
@@ -74,8 +75,9 @@
         .b-purple { background: #a020f0; border: 2px solid #7010b0; }
 
         @keyframes floatUp {
-            0%   { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(-130vh) rotate(10deg); }
+            0%   { transform: translate(0, 0) rotate(0deg); }
+            50%  { transform: translate(20px, -60vh) rotate(5deg); }
+            100% { transform: translate(-20px, -130vh) rotate(10deg); }
         }
 
         #confetti-canvas {
@@ -134,12 +136,18 @@
             text-align: center;
             z-index: 20;
             width: 90%;
-            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), glow 2s ease-in-out infinite alternate;
+            backdrop-filter: blur(10px);
         }
 
         @keyframes popIn {
             from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
             to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+            to   { box-shadow: 0 0 40px rgba(255,255,255,0.7); }
         }
 
         .shake-text {
@@ -173,6 +181,10 @@
             letter-spacing: 1px;
         }
 
+        #permission-btn:active {
+            transform: scale(0.95);
+        }
+
         .fade-out { opacity: 0 !important; pointer-events: none; }
     </style>
 </head>
@@ -190,7 +202,7 @@
     </div>
 
     <div id="shake-content">
-        <p class="shake-text">La multi ani iubirea mea!! <br> Te iubesc cel mai mult din tot universul ilinca!</p>
+        <p class="shake-text" data-text="La multi ani iubirea mea!! Te iubesc cel mai mult din tot universul ilinca!"></p>
         <img src="noi.jpg" class="noi-img" alt="Noi">
     </div>
 
@@ -205,6 +217,8 @@
         const shakeContent = document.getElementById('shake-content');
         const balloonContainer = document.getElementById('balloon-container');
         const music = document.getElementById('bg-music');
+        const shakeText = document.querySelector('.shake-text');
+        const shakeTextValue = shakeText.dataset.text;
 
         let confettiInterval, balloonInterval, rafId;
         let isShaken = false;
@@ -235,11 +249,17 @@
 
         function startMusic() {
             music.src = 'song.mp3';
-            music.volume = 1.0;
+            music.volume = 0;
             music.play().catch(() => {
                 document.addEventListener('touchstart', () => music.play(), { once: true });
                 document.addEventListener('click', () => music.play(), { once: true });
             });
+            let vol = 0;
+            const fade = setInterval(() => {
+                vol += 0.05;
+                music.volume = Math.min(vol, 1);
+                if (vol >= 1) clearInterval(fade);
+            }, 100);
         }
 
         function createBalloon() {
@@ -257,6 +277,21 @@
                 myConfetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
                 myConfetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
             }, 200);
+        }
+
+        function typeText(el, text, speed) {
+            let i = 0;
+            el.innerHTML = '';
+            const interval = setInterval(() => {
+                el.innerHTML += text[i++];
+                if (i >= text.length) clearInterval(interval);
+            }, speed);
+        }
+
+        function heartbeat() {
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
         }
 
         function tiltLoop() {
@@ -281,6 +316,7 @@
 
             targetRotX = dBeta;
             targetRotY = -dGamma;
+            bg.style.transform = `translate(${dGamma * 2}px, ${dBeta * 2}px)`;
         }
 
         function handleMotion(event) {
@@ -300,14 +336,27 @@
             cancelAnimationFrame(rafId);
             clearInterval(confettiInterval);
             clearInterval(balloonInterval);
+            heartbeat();
             card.classList.add('fade-out');
             setTimeout(() => {
                 card.style.display = 'none';
                 balloonContainer.style.display = 'none';
                 bg.style.transform = 'translate(0,0)';
                 shakeContent.style.display = 'flex';
+                typeText(shakeText, shakeTextValue, 40);
             }, 500);
         }
+
+        document.addEventListener('click', function(e) {
+            myConfetti({
+                particleCount: 20,
+                spread: 40,
+                origin: {
+                    x: e.clientX / window.innerWidth,
+                    y: e.clientY / window.innerHeight
+                }
+            });
+        });
 
         btn.addEventListener('click', async () => {
             requestFullscreen();
@@ -342,9 +391,9 @@
             }, 300);
 
             setTimeout(() => { card.style.opacity = '1'; }, 50);
-
-            startConfetti();
-            balloonInterval = setInterval(createBalloon, 600);
+            setTimeout(startConfetti, 300);
+            setTimeout(() => balloonInterval = setInterval(createBalloon, 600), 800);
+            setTimeout(() => { bg.style.transform = 'translate(0,0)'; }, 200);
             tiltLoop();
         });
     </script>

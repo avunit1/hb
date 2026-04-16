@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>La multi ani Ilinca!</title>
+    <title>La multi ani Ilinca!!!!</title>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -70,8 +74,8 @@
         .b-purple { background: #a020f0; border: 2px solid #7010b0; }
 
         @keyframes floatUp {
-            0%   { transform: translateY(0)       rotate(0deg); }
-            100% { transform: translateY(-130vh)  rotate(10deg); }
+            0%   { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-130vh) rotate(10deg); }
         }
 
         #confetti-canvas {
@@ -135,7 +139,7 @@
 
         @keyframes popIn {
             from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+            to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
         .shake-text {
@@ -190,7 +194,6 @@
         <img src="noi.jpg" class="noi-img" alt="Noi">
     </div>
 
-    <!-- Background music — src loaded via JS to avoid autoplay block -->
     <audio id="bg-music" loop preload="auto"></audio>
 
     <script>
@@ -217,7 +220,6 @@
 
         const colors = ['b-blue', 'b-red', 'b-pink', 'b-white', 'b-purple'];
 
-        /* ── Fullscreen (iOS Safari uses webkitRequestFullscreen on <html>) ── */
         function requestFullscreen() {
             const el = document.documentElement;
             if (el.requestFullscreen) {
@@ -231,18 +233,15 @@
             }
         }
 
-        /* ── Audio unlock + play ─────────────────────────────────────────── */
         function startMusic() {
             music.src = 'song.mp3';
             music.volume = 1.0;
             music.play().catch(() => {
-                // If autoplay is still blocked, play on next user tap
                 document.addEventListener('touchstart', () => music.play(), { once: true });
-                document.addEventListener('click',      () => music.play(), { once: true });
+                document.addEventListener('click', () => music.play(), { once: true });
             });
         }
 
-        /* ── Balloon ─────────────────────────────────────── */
         function createBalloon() {
             const b = document.createElement('div');
             b.className = `balloon ${colors[Math.floor(Math.random() * colors.length)]}`;
@@ -252,16 +251,14 @@
             setTimeout(() => b.remove(), 8000);
         }
 
-        /* ── Confetti ────────────────────────────────────── */
         function startConfetti() {
             myConfetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#ffffff', '#000080', '#fce029'] });
             confettiInterval = setInterval(() => {
-                myConfetti({ particleCount: 5, angle: 60,  spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
+                myConfetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
                 myConfetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.8 }, colors: ['#ffffff', '#000080', '#fce029'] });
             }, 200);
         }
 
-        /* ── RAF tilt loop ───────────────────────────────── */
         function tiltLoop() {
             if (!isShaken) {
                 currentRotX += (targetRotX - currentRotX) * LERP;
@@ -273,22 +270,19 @@
             rafId = requestAnimationFrame(tiltLoop);
         }
 
-        /* ── Orientation handler ─────────────────────────── */
         function handleOrientation(event) {
             if (isShaken) return;
             const { beta, gamma } = event;
             if (beta === null || gamma === null) return;
             if (baseBeta === null || baseGamma === null) return;
 
-            const dBeta  = beta  - baseBeta;
+            const dBeta = beta - baseBeta;
             const dGamma = gamma - baseGamma;
 
-            // Apply equal-and-opposite rotation so the card always faces the viewer
-            targetRotX =  dBeta;
+            targetRotX = dBeta;
             targetRotY = -dGamma;
         }
 
-        /* ── Motion/shake handler ────────────────────────── */
         function handleMotion(event) {
             if (isShaken) return;
             const accel = event.accelerationIncludingGravity;
@@ -300,7 +294,6 @@
             lastY = accel.y;
         }
 
-        /* ── Surprise reveal ─────────────────────────────── */
         function triggerSurprise() {
             if (isShaken) return;
             isShaken = true;
@@ -316,15 +309,10 @@
             }, 500);
         }
 
-        /* ── Button ──────────────────────────────────────── */
         btn.addEventListener('click', async () => {
-            // 1. Go fullscreen immediately (must be inside user gesture)
             requestFullscreen();
-
-            // 2. Unlock + start audio (must be inside user gesture)
             startMusic();
 
-            // 3. Request device sensor permissions (iOS 13+)
             if (typeof DeviceOrientationEvent !== 'undefined' &&
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
@@ -345,7 +333,7 @@
             setTimeout(() => {
                 const calibrate = (e) => {
                     if (e.beta !== null && e.gamma !== null) {
-                        baseBeta  = e.beta;
+                        baseBeta = e.beta;
                         baseGamma = e.gamma;
                     }
                     window.removeEventListener('deviceorientation', calibrate);

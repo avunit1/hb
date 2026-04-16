@@ -201,6 +201,15 @@
             margin-bottom: 10px;
         }
 
+        .timer-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+
         .timer-line {
             display: flex;
             align-items: center;
@@ -209,6 +218,61 @@
             flex-wrap: nowrap;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .timer-part {
+            min-width: 2ch;
+            text-align: center;
+            color: #000080;
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-sep {
+            color: rgba(0, 0, 128, 0.75);
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 0 2px;
+        }
+
+        .timer-unit-inline {
+            color: rgba(0, 0, 128, 0.8);
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1;
+            margin-right: 4px;
+            transform: translateY(1px);
+        }
+
+        .timer-line-top .timer-part,
+        .timer-line-bottom .timer-part,
+        .timer-line-top .timer-sep,
+        .timer-line-bottom .timer-sep {
+            font-size: 19px;
+        }
+
+        .timer-line-top .timer-unit-inline,
+        .timer-line-bottom .timer-unit-inline {
+            font-size: 11px;
+        }
+
+        @media (max-width: 420px) {
+            .timer-part {
+                font-size: 17px;
+            }
+
+            .timer-sep {
+                font-size: 17px;
+            }
+
+            .timer-unit-inline {
+                font-size: 10px;
+                margin-right: 3px;
+            }
         }
 
         .timer-part {
@@ -302,9 +366,14 @@
         <p class="shake-text" data-text="La multi ani iubirea mea!! Te iubesc cel mai mult din tot universul ilinca!"></p>
         <img src="noi.jpg" class="noi-img" alt="Noi">
         <div class="timer-wrap" id="timer-wrap">
-            <div class="timer-label">De la 22.08.2025, 20:00</div>
-            <div class="timer-line" id="timer-line">
-                <span class="timer-part" id="timer-years">00</span><span class="timer-unit-inline">y</span><span class="timer-sep">:</span><span class="timer-part" id="timer-months">00</span><span class="timer-unit-inline">m</span><span class="timer-sep">:</span><span class="timer-part" id="timer-weeks">00</span><span class="timer-unit-inline">w</span><span class="timer-sep">:</span><span class="timer-part" id="timer-days">00</span><span class="timer-unit-inline">d</span><span class="timer-sep">:</span><span class="timer-part" id="timer-hours">00</span><span class="timer-unit-inline">h</span><span class="timer-sep">:</span><span class="timer-part" id="timer-minutes">00</span><span class="timer-unit-inline">m</span><span class="timer-sep">:</span><span class="timer-part" id="timer-seconds">00</span><span class="timer-unit-inline">s</span>
+            <div class="timer-label">Suntem impreuna de</div>
+            <div class="timer-stack" id="timer-stack">
+                <div class="timer-line timer-line-top">
+                    <span class="timer-part" id="timer-years">00</span><span class="timer-unit-inline">y</span><span class="timer-sep">:</span><span class="timer-part" id="timer-months">00</span><span class="timer-unit-inline">m</span><span class="timer-sep">:</span><span class="timer-part" id="timer-weeks">00</span><span class="timer-unit-inline">w</span><span class="timer-sep">:</span><span class="timer-part" id="timer-days">00</span><span class="timer-unit-inline">d</span>
+                </div>
+                <div class="timer-line timer-line-bottom">
+                    <span class="timer-part" id="timer-hours">00</span><span class="timer-unit-inline">h</span><span class="timer-sep">:</span><span class="timer-part" id="timer-minutes">00</span><span class="timer-unit-inline">m</span><span class="timer-sep">:</span><span class="timer-part" id="timer-seconds">00</span><span class="timer-unit-inline">s</span>
+                </div>
             </div>
         </div>
     </div>
